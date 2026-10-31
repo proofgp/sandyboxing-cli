@@ -1,0 +1,38 @@
+External dependencies and distribution boundary
+
+Sandyboxing 0.1.0 is distributed as an owned-code CLI archive, not as a
+self-contained dependency bundle. Its MIT license covers Sandyboxing-owned
+code and documentation only.
+
+The package manager separately obtains these exact direct dependencies:
+  @modelcontextprotocol/sdk 1.32.1
+  zod 4.6.7
+
+The CLI-only npm-shrinkwrap.json records the transitive resolution and package
+integrity data. First installation requires network access to obtain packages
+from the public npm registry. Read-only operation after installation does not
+require provider credentials or provider network access. A smaller archive is
+not a measurement of the complete installed dependency tree.
+
+No dependency implementation files or compiler runtime helpers are included
+in this archive. Upstream packages are installed separately and retain their
+own licenses, copyright notices and applicable terms. Preserve the notices
+shipped with those packages; Sandyboxing's MIT grant does not replace them.
+
+The direct packages' root licenses are MIT, but that is not a statement that
+all code in the installed dependency graph is MIT-only. Existing provenance
+review identified acknowledged or possible upstream adaptations, including
+Apache-2.0 traversal material in Zod, MIT-derived material, Stack Overflow
+expressions in Zod and validation dependencies, and a cookbook-linked IPv4
+expression in ajv-formats. Historical attribution and applicable-license
+questions remain for some of that upstream material. Separately obtaining
+dependencies does not resolve those questions, and this notice is not a legal
+clearance statement or a substitute for any applicable license condition.
+
+This archive does not distribute the upstream implementations, so their full
+license bodies are not duplicated here. If dependencies or compiler helpers
+are later bundled, vendored, mirrored, supplied in an offline kit, or included
+in another distributed installer or image, reassess the actual shipped code
+and preserve the applicable complete licenses, attribution and modification
+notices. Merely moving their files to a different directory does not change
+that redistribution boundary.
