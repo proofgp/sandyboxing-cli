@@ -93,6 +93,13 @@ npm uninstall --prefix "$PREFIX" --offline --ignore-scripts \
 
 Remove any now-unused version/download directories manually after checking their contents. This does not uninstall Node, edit client settings, remove other versions or delete npm's shared cache. No PATH or shell startup file was changed by the installation recipe.
 
+## Client setup and additional-platform qualification
+
+- [Hermes and Claude Code setup guidance](docs/client-setup.md): supported commands, explicit configuration scope, verification and removal. Guidance is not a claim that your profile has been configured.
+- [Linux and Windows qualification procedure](docs/platform-qualification.md): the bounded manual campaign and its limitations. Additional-platform support remains pending accepted execution results.
+
+These additions do not replace the immutable-by-policy v0.1.0 archive or change its release tag.
+
 ## License and dependency notices
 
 `LICENSE` applies to Sandyboxing-owned software and documentation only. Separately installed dependencies retain their own terms and notices; see `EXTERNAL-DEPENDENCIES.txt`. Externalization is not upstream license clearance or permission to redistribute a combined offline dependency bundle.

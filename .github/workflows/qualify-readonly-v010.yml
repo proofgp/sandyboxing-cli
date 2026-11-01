@@ -1,0 +1,72 @@
+name: Qualify immutable read-only CLI v0.1.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      website_gate:
+        description: Parent confirms website delivery is complete
+        required: true
+        type: choice
+        options: [hold, website-delivered]
+        default: hold
+      release_review:
+        description: Parent confirms independent review of this exact workflow and harness
+        required: true
+        type: choice
+        options: [hold, reviewed]
+        default: hold
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readonly-v010-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: >-
+      github.repository == 'proofgp/sandyboxing-cli' &&
+      github.event.repository.private == false &&
+      inputs.website_gate == 'website-delivered' &&
+      inputs.release_review == 'reviewed'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout public release-only repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, resolved by GitHub API
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+      - name: Use exact Node runtime (no global npm/tool installs)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4, resolved by GitHub API
+        with:
+          node-version: '24.22.2'
+          architecture: x64
+          check-latest: false
+          token: ''
+      - name: Calibrate pure acceptance guards
+        run: node --test qualification/selftest.mjs
+      - name: Anonymous acquisition, clean install, doctor, real SDK stdio
+        env:
+          SANDY_WEBSITE_GATE: ${{ inputs.website_gate }}
+          SANDY_RELEASE_REVIEW: ${{ inputs.release_review }}
+        run: node qualification/qualify.mjs qualification-run
+      - name: Retain small public evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, resolved by GitHub API
+        with:
+          name: readonly-v010-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: qualification-run/evidence/*.json
+          if-no-files-found: warn
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false
+          compression-level: 6
