@@ -1,4 +1,22 @@
-# Additional-platform qualification: frozen candidate, not executed
+# Platform qualification results and bounded manual procedure
+
+## Current results — 2026-11-02
+
+The accepted scope is **macOS arm64 and Linux x64 with Node v24.22.2 / npm 11.19.1**. **Native Windows is not qualified and further Windows work is deferred.** The v0.1.0 archive, tag and checksum assets are unchanged. The shell installation recipe in the main README remains the macOS recipe; Linux qualification used the explicit scripted acquisition/install procedure below.
+
+| Target | Observed result | Scope |
+|---|---|---|
+| macOS arm64 | Previously accepted public-download, fresh-install, doctor and SDK evidence | Historical release qualification; not a new run in this campaign |
+| GitHub Ubuntu 24.04 x64 | Passed both manual runs; doctor six checks, launch argv, three exit-2 negatives and real SDK stdio passed | CLI runtime only; neither Hermes nor Claude was available on PATH |
+| GitHub Windows 2025 x64 | First run stopped in source-framing calibration. After the checkout repair, all 20 SDK controls passed, but installed doctor exited 1 at local MCP startup | Not qualified; later config/negative-argument/real-product-SDK checks were not reached |
+
+Evidence: [first run 41490165600](https://github.com/proofgp/sandyboxing-cli/actions/runs/41490165600), commit `ec1cf8d6dbf16b68d18382817a2f320f79e86951`; [checkout-repaired run 41493419956](https://github.com/proofgp/sandyboxing-cli/actions/runs/41493419956), commit `66e4357161f25a275afb50a35ea644d387e74f7b`. Both workflows correctly remain failed overall because Windows failed; Linux success is not a campaign-wide PASS.
+
+The one-line `.gitattributes` rule preserves LF in qualification MJS checkouts without changing test assertions or the CLI. A local Git CRLF checkout reproduced the first failure, but the original Windows raw checkout/config was not retained. The later native run demonstrates that the source-control stage passes; it does not establish the cause of the subsequently reached doctor failure. Doctor reported a matching runtime, failed local MCP startup, disabled execution and credentials not inspected. Its underlying startup cause remains unresolved.
+
+Limitations: both Linux RESULT records reported image version `20261026.354.1`, while their runner setup logs reported `20261025.353.1`; exact image-build identity is unresolved. Qualification is scoped to the observed runner label, architecture and product runtime, not a claimed reproducible full VM image. GitHub also reported that the pinned v4 Actions declare Node 20 but are forced to run on Node 24; that Action runtime is separate from the observed product Node v24.22.2. SDK close callbacks are not independent child-reap evidence. No provider/model calls, actual client-profile setup or OS-level egress-denial claim is supplied by these runs.
+
+The two qualification repair cycles are exhausted. This procedure does not authorize another repair, rerun, release replacement or live execution.
 
 ## Delivery order and authority
 
@@ -15,14 +33,14 @@ This work does not change v0.1.0, move a tag, rebuild the CLI, replace an asset,
 |---|---|---|
 | Existing macOS arm64 | Actual local host; installed Hermes and Claude Code inspected through version/help commands | Existing v0.1.0 Node v24.22.2 / npm 11.19.1 doctor, SDK and disposable host-bridge receipts are historical accepted evidence. Not re-run here; not actual profile/UI setup. |
 | Local default Node | v26.12.0 / npm 11.20.0 observed | Used only for pure harness checks and syntax. Does not qualify CLI on Node 26. |
-| GitHub `ubuntu-24.04` x64 | Official standard public-repository runner; release-only repo is public, Actions enabled | Candidate, unrun. |
-| GitHub `windows-2025` x64 | Official standard public-repository runner; release-only repo is public, Actions enabled | Candidate, unrun. Native Windows, not WSL. |
+| GitHub `ubuntu-24.04` x64 | Executed on the standard public-repository runner | CLI runtime qualified; see actual runs and image-identity qualification above. |
+| GitHub `windows-2025` x64 | Executed on the standard public-repository runner | Not qualified: installed doctor failed MCP startup after source controls passed. Native Windows, not WSL. |
 | Local Linux/Windows machinery | No `docker`, `podman`, `limactl`, `qemu-system-x86_64`, or `pwsh` on inspected PATH | No local target available from this bounded check. No daemon/SSH/credential discovery, provisioning or installs attempted. |
-| Hermes / Claude on hosted images | Neither named in the pinned image software lists | Availability not proven until runtime PATH detection; no implicit host install. Missing → `unavailable-on-PATH`; present → `available-not-exercised`. Both remain `qualified:false` in the platform harness. |
+| Hermes / Claude on hosted images | Both reported `unavailable-on-PATH` in the actual jobs | Neither client is qualified by this campaign. No implicit host installation or profile changes. |
 
 Official GitHub docs say standard hosted runners are free and unlimited **for public repositories**. This is not a guarantee of immediate scheduling, quota-policy eligibility, or availability for this account. No larger/self-hosted runner or paid VM is selected. `ubuntu-slim` is not used. The current image inventory is mutable; receipts record the actual image version and OS release.
 
-## Proposed public addition
+## Published qualification files
 
 Copy only the reviewed `public/` contents into the existing release-only repository. That contains `.github/workflows/qualify-readonly-v010.yml`, `qualification/` and these `docs/` files. Do **not** copy the parent workspace, local evidence, existing private test harnesses, installed dependency trees or the historical oracle's source metadata. A README link update is a separate prospective documentation change; retain existing platform limitations until results are accepted.
 
@@ -38,7 +56,7 @@ Action commits were resolved from GitHub's API and their exact commits retrieved
 
 Node is exactly `24.22.2`, x64, with no `latest` lookup or global tool/npm upgrade. Official Node release metadata lists npm `11.19.1` for it; the harness verifies the actual bundled npm and fails on mismatch.
 
-## What the runnable harness will check
+## What the runnable harness checks
 
 `node qualification/qualify.mjs qualification-run` is the literal workflow invocation. It refuses an existing output directory and refuses execution outside the approved exact hosted-repository gate.
 
@@ -59,9 +77,9 @@ The hosted campaign must not bootstrap Hermes/Claude merely to make a support ma
 
 On this Mac, Hermes and Claude are present and their supported command help is captured. The existing disposable Hermes bridge receipt is historical evidence. A later bounded client-setup validation should use the printed config, `hermes mcp add`/`test` and `claude mcp add`/`get`, observe readback and cleanup of **only the newly owned disposable entry**, and inspect no token files. Actual desktop/UI profile setup requires its own explicit user selection and verification. On hosted Linux/Windows, absence stays an honest unavailable result; an unexpected installed client is `available-not-exercised`, not auto-qualified.
 
-## Parent execution handoff (not yet authorized/executed)
+## Manual dispatch procedure — requires its own applicable authority
 
-Prerequisites: website delivered; exact candidate review approved; intended release-only publication set approved; supported GitHub authentication can publish a new workflow. Current local `gh auth status` showed an OAuth `repo` scope but not `workflow`: if publishing workflow contents through that OAuth token, the parent must use the normal authorized scope-refresh flow rather than discovering credentials or substituting a different account. This does not establish a problem with other already-approved publishing interfaces.
+Prerequisites: website delivered; exact candidate review approved; intended release-only publication set approved; supported GitHub authentication can publish the workflow. These prerequisites were met for the recorded runs, including a normal authorized OAuth workflow-scope refresh. Future scope or authentication gaps must use the supported route, not credential discovery, account substitution or a bypass. The recorded runs do not authorize automatic retries.
 
 After the parent has published and read back the reviewed new commit on the default branch, the proposed dispatch is:
 
@@ -74,7 +92,7 @@ Before dispatch, recheck the exact branch SHA against the approved candidate; do
 
 ## Preparation checks actually run
 
-Pure acceptance self-tests and JavaScript/YAML/shell syntax checks are preparation, not acquisition/installation/platform execution. See the parent-local preparation report for exact results. The complete controller, real SDK stdio exchange, CI workflow, host add/test commands and native PowerShell snippet have **not** been exercised in this workstream. Independent review and genuine target runs remain required.
+Pure acceptance self-tests and JavaScript/YAML/shell syntax checks were preparation, not platform qualification. The actual campaign results above now separately cover acquisition, installation and the exercised runtime stages. Host add/test commands and the native PowerShell setup snippet still have **not** been exercised against user profiles; no such qualification is claimed.
 
 ## Portable SDK observation regressions
 

@@ -1,8 +1,8 @@
 # Connect the read-only CLI to Hermes or Claude Code
 
-**Candidate guidance; not evidence of completed profile/UI setup.** First acquire and verify the [v0.1.0 release asset](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.0) using the repository's installation guide. Run doctor before configuring a client. No provider key, login, model call, or live execution is needed for the checks below.
+**Setup guidance; not evidence of completed profile/UI setup.** First acquire and verify the [v0.1.0 release asset](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.0) using the repository's installation guide. Run doctor before configuring a client. No provider key, login, model call, or live execution is needed for the checks below.
 
-Qualification remains **macOS arm64, Node v24.22.2, npm 11.19.1** until additional-platform evidence is accepted. Installed help was inspected for Hermes **v0.22.5, local bf0203a794a0** and Claude Code **2.1.314**. Documentation can be ahead of installed releases; use each client's `--help` if your version differs. The client command grammar is verified, but these add/test commands have **not been executed against a user profile** in this preparation.
+CLI-runtime qualification covers **macOS arm64 and Linux x64, Node v24.22.2, npm 11.19.1**; Linux was tested on the GitHub Ubuntu 24.04 runner. **Native Windows remains unqualified** after a failed installed-doctor MCP startup check; see [actual results](platform-qualification.md). Neither Hermes nor Claude was available on PATH in the hosted jobs, so those jobs do not qualify client setup. During preparation, installed help was inspected for Hermes **v0.22.5, local bf0203a794a0** and Claude Code **2.1.314**. Documentation can be ahead of installed releases; use each client's `--help` if your version differs. The client command grammar is verified, but these add/test commands have **not been executed against a user profile** in this preparation.
 
 ## Obtain the real launch values (macOS / POSIX shell)
 
@@ -85,7 +85,7 @@ Removal from the same project and scope:
 claude mcp remove --scope local sandyboxing
 ```
 
-## Windows PowerShell syntax — qualification pending
+## Windows PowerShell syntax — native Windows unqualified
 
 This is a proposed native-Windows setup form, **not a Windows support claim**. Do not copy a macOS/WSL path into native Windows. After a separately verified native-Windows installation, set `$Entry` to that installation's real `dist-cli\index.mjs` and use the Node v24.22.2 executable from the same environment:
 

@@ -6,7 +6,7 @@ Browse the packaged provider catalogue and plan independent jobs locally through
 
 ## Requirements and scope
 
-- **Node.js 24.x** and npm. Qualification is limited to **Node.js v24.22.2 / npm 11.19.1 on macOS arm64**; other Node versions and platforms are not qualified.
+- **Node.js 24.x** and npm. CLI-runtime qualification covers **Node.js v24.22.2 / npm 11.19.1 on macOS arm64 and Linux x64** (tested on the GitHub Ubuntu 24.04 runner). **Native Windows is not qualified:** the installed doctor failed local MCP startup. Other Node versions and architectures remain unqualified. See the [qualification results and limitations](docs/platform-qualification.md).
 - First installation needs HTTPS access to GitHub release assets and `registry.npmjs.org` for external dependencies. This tarball is **not an offline installer**. Read-only CLI operation is offline after installation; a host client's own network activity is separate.
 - The package pins `@modelcontextprotocol/sdk` to `1.32.1` and `zod` to `4.6.7`. Its `npm-shrinkwrap.json` binds transitive versions and integrity. Dependency code is installed separately, not bundled in this tarball.
 - This is a release-only repository. Use the attached CLI `.tgz`, **not** GitHub's automatically generated “Source code” zip/tar archives. Development source and history are not published here.
@@ -96,7 +96,7 @@ Remove any now-unused version/download directories manually after checking their
 ## Client setup and additional-platform qualification
 
 - [Hermes and Claude Code setup guidance](docs/client-setup.md): supported commands, explicit configuration scope, verification and removal. Guidance is not a claim that your profile has been configured.
-- [Linux and Windows qualification procedure](docs/platform-qualification.md): the bounded manual campaign and its limitations. Additional-platform support remains pending accepted execution results.
+- [Platform qualification results and procedure](docs/platform-qualification.md): Linux x64 passed; native Windows remains unqualified and deferred. SDK runtime checks do not establish Hermes/Claude profile or UI setup.
 
 These additions do not replace the immutable-by-policy v0.1.0 archive or change its release tag.
 
