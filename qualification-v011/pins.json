@@ -1,0 +1,20 @@
+{
+  "release": "v0.1.1",
+  "version": "0.1.1",
+  "archive": "sandyboxing-read-only-0.1.1.tgz",
+  "archiveSha256": "a166ebde41b87ed5c66270db0d68bf0bbdf173ff72259721503703034b821f9a",
+  "archiveBytes": 80233,
+  "node": "v24.22.2",
+  "npm": "11.19.1",
+  "sdk": "1.32.1",
+  "zod": "4.6.7",
+  "dependencyEntries": 95,
+  "members": {
+    "LICENSE": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1",
+    "npm-shrinkwrap.json": "870653bd10bd9d232f4a55b960d87799c18b6143b254c12863518fdc7ccc2204",
+    "package.json": "9bd1951b090ef154bd15fe88f10ba8cfac121a2f03d77d5cce0a9545f26bed7e",
+    "README.md": "b3fa32d6b7f8bb9563ec8848739c6dd834572c51d0ab030961d3c084ab46a3b2",
+    "dist-cli/index.mjs": "f07a6e2dd3060aa75c1dc7b209b987f68c076cd1c527bf8384a3848751cd1bac",
+    "EXTERNAL-DEPENDENCIES.txt": "c2dbf4730f5ea8f5d3f5e19b6a7e0bf83ef482890bb53482081ec9046c1c86c9"
+  }
+}

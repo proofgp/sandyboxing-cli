@@ -1,0 +1,16 @@
+{
+  "request": {
+    "objective": "balanced",
+    "jobs": [
+      {
+        "id": "installed",
+        "name": "Installed",
+        "runtime": "node",
+        "isolation": "any",
+        "requiredCapabilities": []
+      }
+    ]
+  },
+  "catalogueSha256": "e0294b5294016af10bbcefb980c7f4e709fe74deb03caa9c603456764c5ec5bf",
+  "planSha256": "f494e4e803110438fc2a204fe52467268534e01766f9e4c6dd38b236b2b99dce"
+}

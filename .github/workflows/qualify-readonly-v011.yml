@@ -1,0 +1,97 @@
+name: Qualify immutable read-only CLI v0.1.1 (Linux only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      acquisition_mode:
+        description: Draft qualification before publication; anonymous fresh install after publication
+        required: true
+        type: choice
+        options: [draft, public]
+        default: draft
+      release_review:
+        description: Parent confirms independent review of this exact workflow and harness
+        required: true
+        type: choice
+        options: [hold, reviewed]
+        default: hold
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readonly-v011-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: >-
+      github.repository == 'proofgp/sandyboxing-cli' &&
+      github.event.repository.private == false &&
+      inputs.release_review == 'reviewed' &&
+      (inputs.acquisition_mode == 'draft' || inputs.acquisition_mode == 'public')
+    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      SANDY_RELEASE_REVIEW: ${{ inputs.release_review }}
+      SANDY_ACQUISITION_MODE: ${{ inputs.acquisition_mode }}
+    steps:
+      - name: Checkout public release-only repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # retained v010 reviewed pin
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          submodules: false
+          lfs: false
+      - name: Use exact Node runtime (no global npm/tool installs)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # retained v010 reviewed pin
+        with:
+          node-version: '24.22.2'
+          architecture: x64
+          check-latest: false
+          token: ''
+      - name: Calibrate pure acceptance guards
+        run: node --test qualification-v011/selftest.mjs qualification-v011/acquisition-selftest.mjs qualification-v011/policy-selftest.mjs qualification-v011/compact-selftest.mjs
+      - name: Validate native gates and start shared ten-minute budget
+        id: preflight
+        run: node qualification-v011/preflight.mjs >> "$GITHUB_OUTPUT"
+      - name: Download exact draft assets (only credential-bearing step)
+        if: inputs.acquisition_mode == 'draft'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_CONFIG_DIR: ${{ runner.temp }}/sandy-v011-gh-${{ github.run_id }}-${{ github.run_attempt }}
+          DRAFT_ASSETS: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir "$DRAFT_ASSETS"
+          timeout --signal=KILL 120s bash -euo pipefail -c '
+            gh release view v0.1.1 --repo proofgp/sandyboxing-cli --json isDraft,tagName > "$DRAFT_ASSETS/release.json"
+            jq -e '\''.isDraft == true and .tagName == "v0.1.1"'\'' "$DRAFT_ASSETS/release.json" > /dev/null
+            gh release download v0.1.1 --repo proofgp/sandyboxing-cli --pattern sandyboxing-read-only-0.1.1.tgz --pattern SHA256SUMS --dir "$DRAFT_ASSETS"
+          '
+      - name: Qualify exact bytes, empty-cache install, doctor and SDK
+        env:
+          SANDY_QUALIFICATION_STARTED_MS: ${{ steps.preflight.outputs.started-ms }}
+          DRAFT_ASSETS: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          if [[ "$SANDY_ACQUISITION_MODE" == draft ]]; then
+            node qualification-v011/qualify.mjs qualification-v011-run "$DRAFT_ASSETS"
+          else
+            node qualification-v011/qualify.mjs qualification-v011-run
+          fi
+      - name: Retain small public evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # retained v010 reviewed pin
+        with:
+          name: readonly-v011-linux-x64-${{ inputs.acquisition_mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: qualification-v011-run/evidence/*.json
+          if-no-files-found: warn
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false
+          compression-level: 6
