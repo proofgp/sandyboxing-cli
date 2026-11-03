@@ -1,6 +1,6 @@
 # sandyboxing v0.1.1 — read-only CLI
 
-> **Release qualification snapshot.** The exact v0.1.1 archive passed macOS arm64 and Linux x64 installed-runtime checks. Post-publication anonymous download/fresh-install verification is **PENDING at tagging**; see the [current results](https://github.com/proofgp/sandyboxing-cli/blob/main/docs/platform-qualification.md#v011-results) for later evidence. Use the installation recipe only after the release is published and its applicable checks are accepted. The immutable tag records this snapshot; later results do not move it.
+> **Published and anonymously verified.** [v0.1.1](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.1) passed macOS arm64 installed-runtime checks and Linux x64 anonymous download, fresh empty-cache installation and runtime checks in [run 41561463919](https://github.com/proofgp/sandyboxing-cli/actions/runs/41561463919). Follow the canonical `npm ci` recipe below. The immutable tag preserves its pre-anonymous-check snapshot; this later documentation commit records the completed gate without moving the tag or changing the archive.
 
 Browse the packaged provider catalogue and plan independent jobs through local MCP. This CLI has **no live execution switch**, does not load provider credentials, does not refresh the catalogue and does not contact providers. Catalogue inclusion is not a connected account, current availability check or executable offer.
 
