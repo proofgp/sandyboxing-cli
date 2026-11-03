@@ -24,12 +24,84 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  qualify:
+  draft_download:
     if: >-
+      ${{ !cancelled() &&
       github.repository == 'proofgp/sandyboxing-cli' &&
       github.event.repository.private == false &&
       inputs.release_review == 'reviewed' &&
-      (inputs.acquisition_mode == 'draft' || inputs.acquisition_mode == 'public')
+      inputs.acquisition_mode == 'draft' }}
+    permissions:
+      contents: write
+    outputs:
+      started-ms: ${{ steps.acquire.outputs.started-ms }}
+    timeout-minutes: 3
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download exact draft assets (only credential-bearing step)
+        id: acquire
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_CONFIG_DIR: ${{ runner.temp }}/sandy-v011-gh-${{ github.run_id }}-${{ github.run_attempt }}
+          DRAFT_ASSETS: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf 'started-ms=%s\n' "$(date +%s%3N)" >> "$GITHUB_OUTPUT"
+          mkdir "$DRAFT_ASSETS"
+          timeout --signal=KILL 120s bash -euo pipefail -c '
+            gh release view v0.1.1 --repo proofgp/sandyboxing-cli --json isDraft,tagName > "$DRAFT_ASSETS/release.json"
+            jq -e -s '\''length == 1 and .[0] == {isDraft:true,tagName:"v0.1.1"}'\'' "$DRAFT_ASSETS/release.json" > /dev/null
+            gh release download v0.1.1 --repo proofgp/sandyboxing-cli --pattern sandyboxing-read-only-0.1.1.tgz --pattern SHA256SUMS --dir "$DRAFT_ASSETS"
+          '
+      - name: Verify exact draft inputs before transfer
+        env:
+          DRAFT_ASSETS: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ -d "$DRAFT_ASSETS" && ! -L "$DRAFT_ASSETS" ]] || exit 1
+          shopt -s dotglob nullglob
+          files=("$DRAFT_ASSETS"/*)
+          [[ ${#files[@]} -eq 3 ]] || exit 1
+          for name in SHA256SUMS release.json sandyboxing-read-only-0.1.1.tgz; do
+            [[ -f "$DRAFT_ASSETS/$name" && ! -L "$DRAFT_ASSETS/$name" ]] || exit 1
+          done
+          [[ $(wc -c < "$DRAFT_ASSETS/release.json") -le 1024 ]] || exit 1
+          [[ $(wc -c < "$DRAFT_ASSETS/SHA256SUMS") -le 512 ]] || exit 1
+          [[ $(wc -c < "$DRAFT_ASSETS/sandyboxing-read-only-0.1.1.tgz") -eq 80233 ]] || exit 1
+          jq -e -s 'length == 1 and .[0] == {isDraft:true,tagName:"v0.1.1"}' "$DRAFT_ASSETS/release.json" > /dev/null
+          cmp -s "$DRAFT_ASSETS/SHA256SUMS" <(printf 'a166ebde41b87ed5c66270db0d68bf0bbdf173ff72259721503703034b821f9a  sandyboxing-read-only-0.1.1.tgz\n')
+          (cd "$DRAFT_ASSETS" && sha256sum --check --status SHA256SUMS)
+      - name: Transfer only verified draft inputs
+        timeout-minutes: 1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # retained v010 reviewed pin
+        with:
+          name: readonly-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}/SHA256SUMS
+            ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}/release.json
+            ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}/sandyboxing-read-only-0.1.1.tgz
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: false
+          overwrite: false
+          compression-level: 0
+
+  qualify:
+    needs: [draft_download]
+    if: >-
+      ${{ !cancelled() &&
+      github.repository == 'proofgp/sandyboxing-cli' &&
+      github.event.repository.private == false &&
+      inputs.release_review == 'reviewed' &&
+      ((inputs.acquisition_mode == 'public' && needs.draft_download.result == 'skipped') ||
+      (inputs.acquisition_mode == 'draft' && needs.draft_download.result == 'success')) }}
+    permissions:
+      contents: read
     timeout-minutes: 15
     runs-on: ubuntu-24.04
     defaults:
@@ -38,6 +110,7 @@ jobs:
     env:
       SANDY_RELEASE_REVIEW: ${{ inputs.release_review }}
       SANDY_ACQUISITION_MODE: ${{ inputs.acquisition_mode }}
+      SANDY_QUALIFICATION_STARTED_MS: ${{ needs.draft_download.outputs.started-ms }}
     steps:
       - name: Checkout public release-only repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # retained v010 reviewed pin
@@ -55,24 +128,15 @@ jobs:
           token: ''
       - name: Calibrate pure acceptance guards
         run: node --test qualification-v011/selftest.mjs qualification-v011/acquisition-selftest.mjs qualification-v011/policy-selftest.mjs qualification-v011/compact-selftest.mjs
-      - name: Validate native gates and start shared ten-minute budget
+      - name: Validate native gates and shared ten-minute budget
         id: preflight
         run: node qualification-v011/preflight.mjs >> "$GITHUB_OUTPUT"
-      - name: Download exact draft assets (only credential-bearing step)
+      - name: Receive exact draft inputs from this run only
         if: inputs.acquisition_mode == 'draft'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_CONFIG_DIR: ${{ runner.temp }}/sandy-v011-gh-${{ github.run_id }}-${{ github.run_attempt }}
-          DRAFT_ASSETS: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
-        run: |
-          set -euo pipefail
-          umask 077
-          mkdir "$DRAFT_ASSETS"
-          timeout --signal=KILL 120s bash -euo pipefail -c '
-            gh release view v0.1.1 --repo proofgp/sandyboxing-cli --json isDraft,tagName > "$DRAFT_ASSETS/release.json"
-            jq -e '\''.isDraft == true and .tagName == "v0.1.1"'\'' "$DRAFT_ASSETS/release.json" > /dev/null
-            gh release download v0.1.1 --repo proofgp/sandyboxing-cli --pattern sandyboxing-read-only-0.1.1.tgz --pattern SHA256SUMS --dir "$DRAFT_ASSETS"
-          '
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # resolved v4 commit
+        with:
+          name: readonly-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sandy-v011-draft-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Qualify exact bytes, empty-cache install, doctor and SDK
         env:
           SANDY_QUALIFICATION_STARTED_MS: ${{ steps.preflight.outputs.started-ms }}
