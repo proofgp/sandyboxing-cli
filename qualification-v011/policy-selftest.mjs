@@ -241,15 +241,15 @@ function dependencyFixture() {
   const pins={version:'0.1.1',sdk:'1.32.1',zod:'4.6.7',dependencyEntries:2};
   const dependencies={'@modelcontextprotocol/sdk':pins.sdk,zod:pins.zod};
   const packages={'':{version:pins.version,dependencies}};
-  const hidden={'node_modules/sandyboxing':{version:pins.version}};
+  const hidden={};
   const files={};
   for(const [name,version] of Object.entries(dependencies)) {
     packages['node_modules/'+name]={version,resolved:'https://registry.npmjs.org/'+name,integrity:'synthetic-'+name};
     hidden['node_modules/'+name]={...packages['node_modules/'+name]};
-    files['/prefix/node_modules/'+name+'/package.json']={name,version};
+    files['/prefix/node_modules/sandyboxing/node_modules/'+name+'/package.json']={name,version};
   }
   files['/prefix/node_modules/sandyboxing/npm-shrinkwrap.json']={packages};
-  files['/prefix/node_modules/.package-lock.json']={packages:hidden};
+  files['/prefix/node_modules/sandyboxing/node_modules/.package-lock.json']={packages:hidden};
   return {pins,packages,hidden,files};
 }
 function checkDependencies(f) {
@@ -261,7 +261,7 @@ test('dependency identity verifier accepts an exact synthetic locked inventory',
 for(const [name,mutate] of [
   ['missing entry',f=>delete f.hidden['node_modules/zod']],['surplus entry',f=>f.hidden['node_modules/extra']={}],
   ['changed integrity',f=>f.hidden['node_modules/zod'].integrity='altered'],['changed origin',f=>f.hidden['node_modules/zod'].resolved='https://foreign.invalid'],
-  ['changed manifest version',f=>f.files['/prefix/node_modules/zod/package.json'].version='0.0.0'],
-  ['changed manifest name',f=>f.files['/prefix/node_modules/zod/package.json'].name='other'],
+  ['changed manifest version',f=>f.files['/prefix/node_modules/sandyboxing/node_modules/zod/package.json'].version='0.0.0'],
+  ['changed manifest name',f=>f.files['/prefix/node_modules/sandyboxing/node_modules/zod/package.json'].name='other'],
   ['wrong package version',f=>f.packages[''].version='0.1.0'],['wrong declared count',f=>f.pins.dependencyEntries=95]
 ])test('dependency identity verifier refuses '+name,()=>{const f=dependencyFixture();mutate(f);assert.throws(()=>checkDependencies(f));});

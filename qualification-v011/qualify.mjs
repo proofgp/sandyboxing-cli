@@ -133,30 +133,56 @@ try {
   assert.equal(archive.length,pins.archiveBytes); verifySha(archive,pins.archiveSha256);
   save('archive-check',{sha256:pins.archiveSha256,bytes:archive.length,matchedPinnedDigest:true});
   const prefix=path.join(work,'prefix'), archiveFile=path.join(work,'download',pins.archive);
-  // An explicit root manifest makes npm-ls diagnostics meaningful, not an unmanaged-prefix extraneous tree.
-  fs.writeFileSync(path.join(prefix,'package.json'),JSON.stringify({name:'sandyboxing-qualification-root',version:'0.0.0',private:true,dependencies:{sandyboxing:'file:../download/'+pins.archive}},null,2)+'\n',{flag:'wx'});
-  await success('fresh-install',[npm,'install','--prefix',prefix,'--registry=https://registry.npmjs.org/','--ignore-scripts','--no-audit','--no-fund','--no-save','--no-package-lock','--omit=dev','--fetch-retries=0','--strict-ssl=true',archiveFile],300000);
-  env.npm_config_offline='true'; // Installation is the only npm network stage.
+  // Only this exact, independently audited six-regular-member archive is admitted.
+  // This is not a generic arbitrary-tar safety parser.
+  const members=['LICENSE','npm-shrinkwrap.json','package.json','README.md','dist-cli/index.mjs','EXTERNAL-DEPENDENCIES.txt'];
+  assert.deepEqual(Object.keys(pins.members).sort(),[...members].sort());
+  const archiveStat=fs.lstatSync(archiveFile);
+  assert.ok(archiveStat.isFile() && !archiveStat.isSymbolicLink());
+  assert.equal(archiveStat.size,pins.archiveBytes); verifySha(fs.readFileSync(archiveFile),pins.archiveSha256);
+  assert.ok(fs.lstatSync(prefix).isDirectory() && !fs.lstatSync(prefix).isSymbolicLink());
+  assert.deepEqual(fs.readdirSync(prefix),[],'Installation prefix must be empty');
+  const names=await run('archive-members',['-tzf',archiveFile],30000,'/usr/bin/tar');
+  assert.equal(names.code,0); assert.equal(names.signal,null);
+  assert.deepEqual(names.stdout.trimEnd().split('\n').sort(),members.map(name=>'package/'+name).sort());
+  fs.mkdirSync(path.join(prefix,'node_modules'));
   const packageRoot=path.join(prefix,'node_modules','sandyboxing');
-  for(const [relative,sha] of Object.entries(pins.members)) verifySha(fs.readFileSync(path.join(packageRoot,relative)),sha);
-  save('installed-own-files',{matched:Object.keys(pins.members)});
+  fs.mkdirSync(packageRoot); // No recursive/reuse option: fresh owned application root.
+  const extraction=await run('archive-extract',['-xzpf',archiveFile,'--no-same-owner','--strip-components=1','-C',packageRoot,...members.map(name=>'package/'+name)],30000,'/usr/bin/tar');
+  assert.equal(extraction.code,0); assert.equal(extraction.signal,null);
+  function verifyOwnFiles() {
+    for(const [relative,sha] of Object.entries(pins.members)) {
+      const file=path.join(packageRoot,relative), stat=fs.lstatSync(file);
+      assert.ok(stat.isFile() && !stat.isSymbolicLink(),relative+' regular file');
+      assert.equal(stat.mode&0o7777,relative==='dist-cli/index.mjs'?0o755:0o644,relative+' mode');
+      verifySha(fs.readFileSync(file),sha);
+    }
+  }
+  verifyOwnFiles();
+  save('extracted-own-files',{matched:members,modesMatched:true});
+  // The shipped shrinkwrap is authoritative at its matching application root.
+  // No wrapper manifest, mismatched lock seed, or project .bin link is created.
+  await success('fresh-install',[npm,'ci','--prefix',packageRoot,'--registry=https://registry.npmjs.org/','--ignore-scripts','--no-audit','--no-fund','--omit=dev','--fetch-retries=0','--strict-ssl=true'],300000);
+  env.npm_config_offline='true'; // Installation is the only npm network stage.
+  verifyOwnFiles();
+  save('installed-own-files',{matched:members,modesMatched:true});
   const shrinkwrap=JSON.parse(fs.readFileSync(path.join(packageRoot,'npm-shrinkwrap.json'),'utf8'));
   const locked=Object.entries(shrinkwrap.packages).filter(([name])=>name!=='');
   assert.equal(locked.length,pins.dependencyEntries);
   assert.equal(shrinkwrap.packages[''].version,pins.version);
   assert.deepEqual(shrinkwrap.packages[''].dependencies,{'@modelcontextprotocol/sdk':pins.sdk,zod:pins.zod});
-  const installedLock=JSON.parse(fs.readFileSync(path.join(prefix,'node_modules','.package-lock.json'),'utf8')).packages;
-  assert.deepEqual(Object.keys(installedLock).sort(),['node_modules/sandyboxing',...locked.map(([name])=>name)].sort());
+  const installedLock=JSON.parse(fs.readFileSync(path.join(packageRoot,'node_modules','.package-lock.json'),'utf8')).packages;
+  assert.deepEqual(Object.keys(installedLock).sort(),locked.map(([name])=>name).sort());
   for(const [name,expected] of locked) {
     for(const key of ['version','resolved','integrity']) assert.equal(installedLock[name][key],expected[key],name+' '+key);
-    const manifest=JSON.parse(fs.readFileSync(path.join(prefix,name,'package.json'),'utf8'));
+    const manifest=JSON.parse(fs.readFileSync(path.join(packageRoot,name,'package.json'),'utf8'));
     assert.equal(manifest.name,name.split('node_modules/').at(-1));
     assert.equal(manifest.version,expected.version);
   }
   save('dependency-lock-check',{dependencyEntries:locked.length,sdk:pins.sdk,zod:pins.zod,scope:'exact-lock-identities-and-manifest-versions-not-independent-file-provenance'});
-  const listing=JSON.parse(await success('dependency-list',[npm,'ls','--prefix',prefix,'--all','--json'],30000));
+  const listing=JSON.parse(await success('dependency-list',[npm,'ls','--prefix',packageRoot,'--all','--json'],30000));
   const diagnostics=[]; function collect(node) {if(node.problems)diagnostics.push(...node.problems);for(const child of Object.values(node.dependencies||{}))collect(child);} collect(listing);
-  assert.deepEqual(diagnostics,[]); assert.equal(listing.dependencies.sandyboxing.version,'0.1.1');
+  assert.deepEqual(diagnostics,[]); assert.equal(listing.name,'sandyboxing'); assert.equal(listing.version,pins.version);
   const entry=path.join(packageRoot,'dist-cli','index.mjs');
   await success('sdk-selftests',['--test-reporter=tap',path.join(here,'sdk-selftest.mjs'),entry],30000);
   const help=await success('installed-help',[entry,'--help']); assert.match(help,/mcp-config/); assert.match(help,/--read-only/);
@@ -173,7 +199,7 @@ try {
     const result=await run(name,[entry,...args]); assert.equal(result.code,2); assert.equal(result.signal,null);
   }
   // Same installed own-code bytes after runtime; dependencies are not claimed independently immutable.
-  for(const [relative,sha] of Object.entries(pins.members)) verifySha(fs.readFileSync(path.join(packageRoot,relative)),sha);
+  verifyOwnFiles();
   remaining(1);
   receipt.status='passed';
 } catch(error) {
