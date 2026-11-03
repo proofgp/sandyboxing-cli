@@ -1,113 +1,72 @@
-# Platform qualification results and bounded manual procedure
+# Platform qualification — v0.1.1
 
-## Current results — 2026-11-02
+**Release qualification snapshot: v0.1.1 Linux draft qualification passed; post-publication anonymous acquisition remains PENDING at tagging.** Qualification is version/artifact/runtime/OS/architecture-specific. Client command guidance, a real SDK exchange and actual profile activation are separate evidence scopes.
 
-The accepted scope is **macOS arm64 and Linux x64 with Node v24.22.2 / npm 11.19.1**. **Native Windows is not qualified and further Windows work is deferred.** The v0.1.0 archive, tag and checksum assets are unchanged. The shell installation recipe in the main README remains the macOS recipe; Linux qualification used the explicit scripted acquisition/install procedure below.
+## Frozen artifact
 
-| Target | Observed result | Scope |
+- Archive: `sandyboxing-read-only-0.1.1.tgz`, **80,233 bytes**.
+- SHA-256: `a166ebde41b87ed5c66270db0d68bf0bbdf173ff72259721503703034b821f9a`.
+- Node: **v24.22.2**; npm: **11.19.1**; SDK: **1.32.1**; Zod: **4.6.7**.
+- Seven advertised tools, six read-only host-allowed tools, nine doctor checks. `forge_probe` is locally denied and excluded from the host allowlist.
+- Exact accepted archive bytes are reused, not repacked. Its embedded private-candidate README and private-install timing text are historical; the version-tagged repository guide/release notes supersede distribution/qualification status only. Safety and licensing qualifications remain applicable.
+
+## v0.1.1 results
+
+<a id="v011-results"></a>
+
+<!-- BEGIN V011_RESULTS: parent updates only from authenticated real receipts -->
+| Gate | Status | Actual evidence / limitation |
 |---|---|---|
-| macOS arm64 | Previously accepted public-download, fresh-install, doctor and SDK evidence | Historical release qualification; not a new run in this campaign |
-| GitHub Ubuntu 24.04 x64 | Passed both manual runs; doctor six checks, launch argv, three exit-2 negatives and real SDK stdio passed | CLI runtime only; neither Hermes nor Claude was available on PATH |
-| GitHub Windows 2025 x64 | First run stopped in source-framing calibration. After the checkout repair, all 20 SDK controls passed, but installed doctor exited 1 at local MCP startup | Not qualified; later config/negative-argument/real-product-SDK checks were not reached |
+| macOS arm64 installed-runtime qualification | **PASS — historical accepted local evidence** | Node v24.22.2 / npm 11.19.1; 85 independent installed SDK cases and nine doctor checks. Six SDK fault-observer controls and nine stream controls also passed. Durable-path replay repeats the same cases, not 170 unique SDK tests. |
+| macOS acquisition mode | **Copied-cache offline install; not cold-cache/anonymous** | Fresh owned prefix from a copied pre-existing npm cache; script-disabled npm and OS network denial. Subsequent authenticated relocation preserves the installed tree. |
+| Actual local Hermes activation | **PASS — one recorded local activation** | Operation `46313372305b`; v0.1.1 activated and all six permitted tools actually called. Sampling/resources/prompts/events disabled; no provider operations. Not a general client/platform qualification. |
+| Linux x64 v0.1.1, draft-authenticated acquisition | **PASS** | [Run 41558143607](https://github.com/proofgp/sandyboxing-cli/actions/runs/41558143607), attempt 1; workflow commit `9c78948d2d94c2d23cc4aa9eab2fb567938cad9d`; both jobs succeeded; RESULT SHA-256 `72ec13c62e76956cc681324110c08ddd0c96f2d4dffe27bb496aa5548abec3b3`. Acquisition is `draft-authenticated-gh`, `anonymous:false`. |
+| Linux OS and runner identity | **Runtime target verified; exact image build unresolved** | Requested `ubuntu-24.04`, actual Ubuntu 24.04.5 LTS, Linux x64, kernel `7.0.0-1017-azure`. Result environment: `ubuntu24` / `20261026.354.1`; setup log image: `ubuntu-24.04` / `20261025.353.1`. The discrepancy is retained, not normalized into exact image attestation. |
+| Linux product runtime and installed checks | **PASS** | Node v24.22.2 / npm 11.19.1; SDK 1.32.1 / Zod 4.6.7. Exact archive and six owned files/modes, canonical application-root `npm ci` into a fresh prefix with empty cache, all 95 locked dependency identities, clean root npm-ls, nine passing doctor checks, print-only argv, three exit-2 negatives and 20 SDK observer controls. Actual SDK: seven tools, 16 providers across six search pages, 16 full details, one plan explanation, strict input refusals, local probe denial and clean schema/text exchange. SDK/transport close observed; independent server-child exit/reap not exposed. |
+| Published release and anonymous fresh installation | **PENDING** | Release ID/tag commit, public asset identity, anonymous archive/checksum download, empty-cache install, doctor and SDK receipts: PENDING. A successful draft download cannot fill this row. |
+| Hermes/Claude in hosted Linux job | **Unavailable; not client-qualified** | Both were `unavailable-on-PATH`. Neither client was bootstrapped or exercised in the job. |
+| Claude Code profile/UI setup | **Guidance only; not exercised for v0.1.1** | Local command-help inspection is not a configured profile, connected server or model-tool-use result. |
+| Native Windows v0.1.1 | **UNQUALIFIED / DEFERRED** | No v0.1.1 Windows work; preserve the v0.1.0 failed-doctor history below. WSL is separate and unqualified here. |
+<!-- END V011_RESULTS -->
 
-Evidence: [first run 41490165600](https://github.com/proofgp/sandyboxing-cli/actions/runs/41490165600), commit `ec1cf8d6dbf16b68d18382817a2f320f79e86951`; [checkout-repaired run 41493419956](https://github.com/proofgp/sandyboxing-cli/actions/runs/41493419956), commit `66e4357161f25a275afb50a35ea644d387e74f7b`. Both workflows correctly remain failed overall because Windows failed; Linux success is not a campaign-wide PASS.
+### Retained v0.1.1 attempts and installer correction
 
-The one-line `.gitattributes` rule preserves LF in qualification MJS checkouts without changing test assertions or the CLI. A local Git CRLF checkout reproduced the first failure, but the original Windows raw checkout/config was not retained. The later native run demonstrates that the source-control stage passes; it does not establish the cause of the subsequently reached doctor failure. Doctor reported a matching runtime, failed local MCP startup, disabled execution and credentials not inspected. Its underlying startup cause remains unresolved.
+- [Run 41544394680](https://github.com/proofgp/sandyboxing-cli/actions/runs/41544394680) failed before installation: the read-only workflow token could not see the unpublished draft. The approved correction confines write-capable access to the short draft-download job; the runtime job remains read-only.
+- [Run 41550614248](https://github.com/proofgp/sandyboxing-cli/actions/runs/41550614248) acquired the exact archive and completed npm installation, but correctly failed strict dependency validation: `@hono/node-server` 2.1.6 differed from the frozen 2.1.5. Doctor/SDK checks were not reached.
+- Investigation with npm 11.19.1 showed the local-tarball manifest omitted the subtree-shrinkwrap marker. Removing `--no-package-lock` alone was not sufficient. The unchanged archive is now extracted into its own matching manifest/shrinkwrap root and installed using `npm ci`; dependency checks were not weakened. Use the current installation recipe, not historical ordinary-tarball install instructions.
+- The successful draft run does not prove anonymous public availability. Post-publication results belong in a new documentation commit and release-note update; never move the immutable release tag or replace its archive.
 
-Limitations: both Linux RESULT records reported image version `20261026.354.1`, while their runner setup logs reported `20261025.353.1`; exact image-build identity is unresolved. Qualification is scoped to the observed runner label, architecture and product runtime, not a claimed reproducible full VM image. GitHub also reported that the pinned v4 Actions declare Node 20 but are forced to run on Node 24; that Action runtime is separate from the observed product Node v24.22.2. SDK close callbacks are not independent child-reap evidence. No provider/model calls, actual client-profile setup or OS-level egress-denial claim is supplied by these runs.
+The recorded macOS suite verified the actual installed CLI with network, source and build dependencies denied and checked actual child cleanup. Those confinement/cleanup results do not transfer to a hosted Linux job. The local Hermes activation followed an earlier timeout and restoration of the previous configuration; the successful authorized retry does not erase that historical failed attempt. These are existing accepted records, **not runs performed by this documentation preparation**.
 
-The two qualification repair cycles are exhausted. This procedure does not authorize another repair, rerun, release replacement or live execution.
+The matching `24.x` engine range is a requirement, not blanket qualification of every Node 24 patch. No result here authenticates a provider, checks live prices/availability, executes a job or grants spending authority. Host applications can independently make model/telemetry requests.
 
-## Delivery order and authority
+## Linux and publication gates
 
-1. Parent verifies website delivery first.
-2. Independent reviewer accepts the exact workflow, scripts, pins and guidance.
-3. Parent separately approves publication of these **new release-only repository files** and the bounded manual workflow dispatch.
-4. Only then run Linux x64 / Windows x64 qualification and review real receipts.
+The proposed Linux-only workflow is `.github/workflows/qualify-readonly-v011.yml`, with its own `qualification-v011/` implementation. It must preserve the v0.1.0 workflow and `qualification/` history. Only the separately reviewed, frozen implementation and real receipts can establish a PASS; this document is not permission to dispatch it.
 
-This work does not change v0.1.0, move a tag, rebuild the CLI, replace an asset, publish private development source, update provider data, configure a real user profile, or authorize paid/provider/model calls. The workflow is deliberately `workflow_dispatch` only. Both inputs default to `hold`; the harness also checks the gate and exact hosted repository before doing any work. These inputs record the parent's decision, not an independently enforced website deployment attestation.
+1. **Draft qualification:** parent publishes only reviewed qualification files, creates an unpublished v0.1.1 release with the exact archive and `SHA256SUMS`, and authenticates downloaded draft asset bytes. Draft acquisition is explicitly **authenticated**, not public/anonymous. Repo-scoped `${{ github.token }}` may be passed as `GH_TOKEN` only to the draft asset download step, never to npm or test/runtime children.
+2. **Native Linux run:** standard GitHub Ubuntu 24.04 x64 runner, exact reviewed action/Node pins, `contents: read`, no repository secrets, paid/self-hosted runners or Windows matrix. Job limit 15 minutes; shared harness limit ten minutes. Fresh prefix/cache, distinct empty npm configurations, external registry dependencies, lifecycle scripts/audit/funding disabled, TLS verified, no global install or automatic retry. Record actual command exits and every acceptance stage, not just the job badge.
+3. **Runtime verification:** bind installed own files and dependency checks to the exact archive/lock; inspect help, nine-check doctor report, printed separate argv and malformed-argument exits. Run the actual installed SDK stdio checks with error observation before connection through completed close. Any retained protocol/transport error, failed calibration, missing stage or incomplete receipt prevents acceptance. Do not relabel in-memory controls as real product calls.
+4. **Publication:** only after acceptance, publish the **same** draft and exact authenticated assets. Do not repack, replace an asset, move an existing tag or publish private history. A release tag binds its documentation commit; the committed checksum binds the archive.
+5. **Anonymous replay:** reacquire archive and checksum without authentication after publication. Compare both to the tagged checksum and frozen archive identity, then perform a new empty-cache installation plus doctor/SDK checks. A private copied-cache install or draft-authenticated run cannot satisfy this gate. Update website onboarding only after it passes.
 
-## Available environments and present evidence
+Keep the harness's actual observed SDK assertion count separate from the **85-case historical macOS suite**; never assign that number to Linux unless those exact cases actually ran. Distinguish controller-owned subprocess exits, SDK transport-close callbacks and independently observed server-child reaping. An awaited SDK `close()` is not independent child-reap proof.
 
-| Environment | Observed availability | Qualification status |
-|---|---|---|
-| Existing macOS arm64 | Actual local host; installed Hermes and Claude Code inspected through version/help commands | Existing v0.1.0 Node v24.22.2 / npm 11.19.1 doctor, SDK and disposable host-bridge receipts are historical accepted evidence. Not re-run here; not actual profile/UI setup. |
-| Local default Node | v26.12.0 / npm 11.20.0 observed | Used only for pure harness checks and syntax. Does not qualify CLI on Node 26. |
-| GitHub `ubuntu-24.04` x64 | Executed on the standard public-repository runner | CLI runtime qualified; see actual runs and image-identity qualification above. |
-| GitHub `windows-2025` x64 | Executed on the standard public-repository runner | Not qualified: installed doctor failed MCP startup after source controls passed. Native Windows, not WSL. |
-| Local Linux/Windows machinery | No `docker`, `podman`, `limactl`, `qemu-system-x86_64`, or `pwsh` on inspected PATH | No local target available from this bounded check. No daemon/SSH/credential discovery, provisioning or installs attempted. |
-| Hermes / Claude on hosted images | Both reported `unavailable-on-PATH` in the actual jobs | Neither client is qualified by this campaign. No implicit host installation or profile changes. |
+Record the runner label, OS release, architecture, image version from the environment **and** setup log separately. Record the Node version used by the product separately from the Node runtime used by GitHub Actions. Do not claim OS-level egress denial, bandwidth enforcement, full image reproducibility or full upstream-code audit unless the actual harness supplies those observations.
 
-Official GitHub docs say standard hosted runners are free and unlimited **for public repositories**. This is not a guarantee of immediate scheduling, quota-policy eligibility, or availability for this account. No larger/self-hosted runner or paid VM is selected. `ubuntu-slim` is not used. The current image inventory is mutable; receipts record the actual image version and OS release.
+After filling the results block, reconcile the README and release-note banners with it. Freeze/review the resulting documents before tagging. If anonymous evidence is acquired after the tag exists, add it in a new documentation commit and release-note update; retain the tagged snapshot and assets unchanged.
 
-## Published qualification files
+## v0.1.0 history
 
-Copy only the reviewed `public/` contents into the existing release-only repository. That contains `.github/workflows/qualify-readonly-v010.yml`, `qualification/` and these `docs/` files. Do **not** copy the parent workspace, local evidence, existing private test harnesses, installed dependency trees or the historical oracle's source metadata. A README link update is a separate prospective documentation change; retain existing platform limitations until results are accepted.
+<a id="v010-history"></a>
 
-The workflow reads the public repository, uses only standard x64 runners, caps each job at 15 minutes, limits concurrency to two, does not automatically retry, and grants only `contents: read`. Checkout does not persist credentials. No repository secrets or provider credentials are referenced. Built-in GitHub checkout/artifact service authentication is not provider authorization.
+These facts qualify **v0.1.0 only** and remain part of the record:
 
-Action commits were resolved from GitHub's API and their exact commits retrieved:
+- Release: [v0.1.0](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.0); tag commit `182ae8fdc7f182af26aa333a4b65be0c66ffaf87`.
+- Archive: `sandyboxing-read-only-0.1.0.tgz`, 79,015 bytes; SHA-256 `e85d7313e52f4e5e6800a635cac4162c89c68f9d897fb0ab5671bef1e0cd26e1`.
+- macOS arm64 had accepted public-download/fresh-install/doctor/SDK evidence. Node v24.22.2 / npm 11.19.1 Linux x64 passed both recorded hosted jobs, with **six** doctor checks and **four** advertised tools, not v0.1.1's nine/seven.
+- [Run 41490165600](https://github.com/proofgp/sandyboxing-cli/actions/runs/41490165600), commit `ec1cf8d6dbf16b68d18382817a2f320f79e86951`, and [run 41493419956](https://github.com/proofgp/sandyboxing-cli/actions/runs/41493419956), commit `66e4357161f25a275afb50a35ea644d387e74f7b`, remain **failed overall** because Windows failed. Linux's success is not an overall workflow PASS.
+- Windows first stopped in source-framing calibration. After the LF checkout repair, 20 SDK controls passed but the installed doctor exited 1 at local MCP startup. Later installed checks were not reached. The startup cause remains unresolved; Windows stays unqualified and further work deferred. Historical repair allowances are not reopened by this version's docs.
+- Both Linux result records reported image `20261026.354.1`, while setup logs reported `20261025.353.1`. Exact image-build identity remains unresolved. No Hermes/Claude executable was available on PATH in those hosted jobs; no actual client-profile setup was qualified there.
 
-| Action | Commit |
-|---|---|
-| `actions/checkout` v4 | `11d5960a326750d5838078e36cf38b85af677262` |
-| `actions/setup-node` v4 | `49933ea5288caeca8642d1e84afbd3f7d6820020` |
-| `actions/upload-artifact` v4 | `ea165f8d65b6e75b540449e92b4886f43607fa02` |
-
-Node is exactly `24.22.2`, x64, with no `latest` lookup or global tool/npm upgrade. Official Node release metadata lists npm `11.19.1` for it; the harness verifies the actual bundled npm and fails on mismatch.
-
-## What the runnable harness checks
-
-`node qualification/qualify.mjs qualification-run` is the literal workflow invocation. It refuses an existing output directory and refuses execution outside the approved exact hosted-repository gate.
-
-1. **Anonymous public acquisition:** fixed v0.1.0 `SHA256SUMS` and `.tgz`; HTTPS only; limited redirects to GitHub release hosts; no Authorization header; no signed redirect query stored. Check the exact separately pinned digest `e85d7313e52f4e5e6800a635cac4162c89c68f9d897fb0ab5671bef1e0cd26e1` and 79,015-byte archive. A checksum is not a publisher signature.
-2. **Fresh installation:** new owned prefix, HOME, npm cache, distinct empty npm user/global config files, explicit registry, TLS verification, scripts/audit/funding disabled, no retries, no global installation. Run Node's bundled `npm-cli.js` directly (avoids Windows `.cmd` invocation ambiguity). External dependencies are downloaded, not copied from the prior Mac installation.
-3. **Installed identity:** compare all six installed own-file digests to the authenticated archive; inspect real `npm ls --all --json` with an explicit root manifest and reject dependency diagnostics. npm performs lock/integrity enforcement. This is not an independent complete transitive-code audit or proof that dependencies are immutable.
-4. **Installed behavior:** from an unrelated cwd with spaces in the prefix, real help, doctor (`status:ok`, exact Node version, six passing checks, read-only, credentials not inspected), and exact printed Node+entry+`mcp`+`--read-only` argv. Unknown/combined/live-like arguments must exit `2`.
-5. **Real SDK stdio:** use the installed pinned SDK 1.32.1 via public interfaces; initialize; discover exact four tools/output schemas; call catalogue, fixed dry-run planner, passive status and the locally denied compatibility probe; compare public-result fingerprints and structured/text equivalence. Observe public `client.onerror` before connection and retain every error through completed close; an early or late error prevents acceptance. No model inference or provider access.
-6. **Shutdown / evidence:** observe controller-owned subprocess close and the SDK's public transport-close callback. Do not claim direct server-child exit status or independent reaping from SDK `close()`. Compare installed own files again. Save explicit passed/failed receipt and non-secret command logs.
-
-The whole harness has a shared ten-minute deadline; acquisition has 120-second request deadlines and bounded artifact sizes, install 300 seconds, runtime subprocesses 30–45 seconds, captured command output 2 MiB. The 15-minute job cap is the final OS-stall bound. This is a small standard-runner campaign, not the prior Mac sandbox/loopback-broker confinement policy. No OS-level network denial or arbitrary npm dependency bandwidth ceiling is claimed. npm registry access is needed for installation; read-only runtime is expected not to contact providers, but that expectation is not a network-capture assertion here.
-
-Only `qualification-run/evidence/*.json` is uploaded, retained seven days. It does not upload installed dependencies, downloaded archives, caches, user directories or source snapshots. Action infrastructure can still retain job logs according to repository settings. Timeout before a final receipt is an incomplete run, never a pass. No automatic rerun or broadened budgets.
-
-## Host setup remains its own next gate
-
-The hosted campaign must not bootstrap Hermes/Claude merely to make a support matrix green. Its SDK test is **not** a real-host test. When a supported client is already installed on an authorized target, use the client guide's supported add/test interfaces against an explicitly approved disposable config home, record exact client version and actual output, and leave real profiles untouched. Validate the client's documented config-home isolation on that platform before using it; HOME alone is not a proof of isolation. Do not launch `hermes chat`, `claude -p`, a model prompt, login, installer or auto-updater.
-
-On this Mac, Hermes and Claude are present and their supported command help is captured. The existing disposable Hermes bridge receipt is historical evidence. A later bounded client-setup validation should use the printed config, `hermes mcp add`/`test` and `claude mcp add`/`get`, observe readback and cleanup of **only the newly owned disposable entry**, and inspect no token files. Actual desktop/UI profile setup requires its own explicit user selection and verification. On hosted Linux/Windows, absence stays an honest unavailable result; an unexpected installed client is `available-not-exercised`, not auto-qualified.
-
-## Manual dispatch procedure — requires its own applicable authority
-
-Prerequisites: website delivered; exact candidate review approved; intended release-only publication set approved; supported GitHub authentication can publish the workflow. These prerequisites were met for the recorded runs, including a normal authorized OAuth workflow-scope refresh. Future scope or authentication gaps must use the supported route, not credential discovery, account substitution or a bypass. The recorded runs do not authorize automatic retries.
-
-After the parent has published and read back the reviewed new commit on the default branch, the proposed dispatch is:
-
-```sh
-gh workflow run qualify-readonly-v010.yml --repo proofgp/sandyboxing-cli --ref main \
-  -f website_gate=website-delivered -f release_review=reviewed
-```
-
-Before dispatch, recheck the exact branch SHA against the approved candidate; don't trust a moving `main`. The workflow must exist on the default branch for manual dispatch. Parent retrieves the exact run ID, real job conclusions and evidence artifacts, reconciles all expected stages and host-unavailable distinctions, and reviews failures without rewriting them. Successful runs support only the exact artifact/runtime/OS/architecture tested. Update public qualification language only after acceptance, as a new docs commit; keep the original release tag/assets unchanged.
-
-## Preparation checks actually run
-
-Pure acceptance self-tests and JavaScript/YAML/shell syntax checks were preparation, not platform qualification. The actual campaign results above now separately cover acquisition, installation and the exercised runtime stages. Host add/test commands and the native PowerShell setup snippet still have **not** been exercised against user profiles; no such qualification is claimed.
-
-## Portable SDK observation regressions
-
-The original eight dependency-free tests remain unchanged in `qualification/selftest.mjs`. A separate test member, `qualification/sdk-selftest.mjs`, needs the public installed SDK, so the controller runs it after dependency verification and before installed CLI behavior. A nonzero test exit fails qualification through the existing `success` guard. This adds no installation, retry, output allowance, or time-budget reset.
-
-```sh
-node --test-reporter=tap qualification/sdk-selftest.mjs /absolute/installed/dist-cli/index.mjs
-```
-
-The entry argument is only a dependency-resolution anchor; this test never imports or executes that entry. It selects the neighboring `sdk-stdio.mjs` initialization/connect and final shutdown/acceptance cuts, and the actual controller success/caller cuts, without substituting an error observer or accepting parser. Twenty portable controls cover healthy traffic, transport errors before/during initialization, late protocol/transport errors, both error paths during and after the close callback while close remains pending, sticky multiple faults, SDK transport-handler ownership, stderr/close acceptance, controller exit/signal/receipt/JSON guards, and calibration invocation/failure propagation. These are in-memory SDK exchanges and caller controls, not a server process or target-platform qualification. The same eight pure tests still run before installation in the held workflow.
-
-## Sources
-
-- [GitHub hosted runner availability and public-repo pricing](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
-- [Ubuntu 24.04 software inventory at retrieved commit](https://github.com/actions/runner-images/blob/4da2307112a0fad2fd2ecaca8ba7d08683b8c581/images/ubuntu/Ubuntu2404-Readme.md)
-- [Windows 2025 software inventory at retrieved commit](https://github.com/actions/runner-images/blob/4da2307112a0fad2fd2ecaca8ba7d08683b8c581/images/windows/Windows2025-Readme.md)
-- [Node distribution metadata](https://nodejs.org/dist/index.json), [v24.22.2 checksums](https://nodejs.org/dist/v24.22.2/SHASUMS256.txt)
-- [Immutable-by-policy v0.1.0 release](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.0)
+The [preserved pre-v0.1.1 qualification document](https://github.com/proofgp/sandyboxing-cli/blob/ae2e8c7089d0edb77e770ed82e002ab048dffdd8/docs/platform-qualification.md) retains the full historical procedure, failed attempts and limits. No v0.1.0 asset, tag or original qualification script is replaced by this documentation candidate.

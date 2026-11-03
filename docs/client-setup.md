@@ -1,73 +1,128 @@
-# Connect the read-only CLI to Hermes or Claude Code
+# Client setup — sandyboxing v0.1.1
 
-**Setup guidance; not evidence of completed profile/UI setup.** First acquire and verify the [v0.1.0 release asset](https://github.com/proofgp/sandyboxing-cli/releases/tag/v0.1.0) using the repository's installation guide. Run doctor before configuring a client. No provider key, login, model call, or live execution is needed for the checks below.
+**Setup guidance, not an automatic installer or a general client qualification.** First follow the [v0.1.1 installation guide](../README.md), including its publication/anonymous-install gate, and inspect the [current qualification record](https://github.com/proofgp/sandyboxing-cli/blob/main/docs/platform-qualification.md#v011-results). Linux runtime qualification passed; hosted client setup was not exercised. No provider credentials or provider operations are needed. The website and `mcp-config` do not modify client profiles.
 
-CLI-runtime qualification covers **macOS arm64 and Linux x64, Node v24.22.2, npm 11.19.1**; Linux was tested on the GitHub Ubuntu 24.04 runner. **Native Windows remains unqualified** after a failed installed-doctor MCP startup check; see [actual results](platform-qualification.md). Neither Hermes nor Claude was available on PATH in the hosted jobs, so those jobs do not qualify client setup. During preparation, installed help was inspected for Hermes **v0.22.5, local bf0203a794a0** and Claude Code **2.1.314**. Documentation can be ahead of installed releases; use each client's `--help` if your version differs. The client command grammar is verified, but these add/test commands have **not been executed against a user profile** in this preparation.
+Accepted local history includes actual Hermes activation and successful calls to all six permitted tools on macOS arm64. This is separate from the 85 installed SDK cases and nine doctor checks, and it does not qualify other profiles, hosts or versions. **Claude Code profile setup has not been exercised for v0.1.1.** During this documentation preparation, command help was inspected for Hermes **v0.22.5, local bf0203a794a0** and Claude Code **2.1.316**; no add/test/config-write command was run against a user profile. Check installed help before using another client version.
 
-## Obtain the real launch values (macOS / POSIX shell)
+## Obtain the real launch values
 
-Run in the same environment that will host the MCP server. The installed runtime and prefix must remain available after setup. A remote Hermes gateway needs paths on that remote host, not paths on your laptop.
+Use paths on the machine hosting the MCP process. A remote gateway cannot use your laptop's local paths. Keep the runtime and versioned installation in durable storage, not a temporary directory. These commands assume the README's extracted application-root `npm ci` layout and invoke the actual entry with Node; that project does not create a wrapper `.bin/sandyboxing` link:
 
 ```sh
 set -eu
-PREFIX="$HOME/.local/share/sandyboxing/0.1.0"
-CLI="$PREFIX/node_modules/.bin/sandyboxing"
-"$CLI" --help
-DOCTOR=$("$CLI" doctor --json)
+ROOT="$HOME/.local/share/sandyboxing/0.1.1"
+NODE_BIN=$(node -p 'process.execPath')
+test "$("$NODE_BIN" --version)" = v24.22.2
+CLI="$ROOT/installed/node_modules/sandyboxing/dist-cli/index.mjs"
+"$NODE_BIN" "$CLI" --help
+DOCTOR=$("$NODE_BIN" "$CLI" doctor --json)
 printf '%s\n' "$DOCTOR"
 printf '%s\n' "$DOCTOR" | node -e '
   const fs=require("node:fs"), d=JSON.parse(fs.readFileSync(0,"utf8"));
-  if(d.status!=="ok" || d.runtime.actual!=="v24.22.2" || !d.runtime.matchesDeclared ||
-     d.liveExecution!=="disabled" || d.credentials!=="not-inspected") process.exit(1);
+  const tools=["providers_list","route_jobs","forge_connection_status",
+    "providers_search","provider_details","plan_explain","forge_probe"].sort();
+  if(d.status!=="ok" || d.mode!=="read-only" || d.runtime.actual!=="v24.22.2" ||
+     !d.runtime.matchesDeclared || d.liveExecution!=="disabled" ||
+     d.credentials!=="not-inspected" || d.checks.length!==9 ||
+     !d.checks.every(c=>c.status==="pass") ||
+     JSON.stringify([...d.tools].sort())!==JSON.stringify(tools)) process.exit(1);
 '
-CONFIG=$("$CLI" mcp-config --json)
+CONFIG=$("$NODE_BIN" "$CLI" mcp-config --json)
 printf '%s\n' "$CONFIG"
 NODE_BIN=$(printf '%s\n' "$CONFIG" | node -e '
-  const fs=require("node:fs"), s=JSON.parse(fs.readFileSync(0,"utf8")).mcpServers.sandyboxing;
-  if(typeof s.command!=="string" || s.args.length!==3 || s.args[1]!=="mcp" || s.args[2]!=="--read-only") process.exit(1);
+  const fs=require("node:fs"), p=require("node:path");
+  const s=JSON.parse(fs.readFileSync(0,"utf8")).mcpServers.sandyboxing;
+  if(!p.isAbsolute(s.command) || s.args.length!==3 || !p.isAbsolute(s.args[0]) ||
+     s.args[1]!=="mcp" || s.args[2]!=="--read-only") process.exit(1);
   process.stdout.write(s.command);
 ')
 CLI_ENTRY=$(printf '%s\n' "$CONFIG" | node -e '
   const fs=require("node:fs"), s=JSON.parse(fs.readFileSync(0,"utf8")).mcpServers.sandyboxing;
-  if(s.args.length!==3 || s.args[1]!=="mcp" || s.args[2]!=="--read-only") process.exit(1);
   process.stdout.write(s.args[0]);
 ')
 ```
 
-Stop if any command fails. This reads the generated JSON, not a guessed Node/entry path. `mcp-config` is print-only. Keep the executable and all three arguments separate; **`"mcp --read-only"` is not one argument**. Do not use `npx sandyboxing`, replace the release with an npm package, or run the bare MCP process manually as a health check (it waits for a client).
+Stop on any failure. Keep the executable and three arguments separate: `"mcp --read-only"` is **not** one argument. Do not substitute `npx`, a guessed package name or a shell wrapper. A manually launched `mcp --read-only` waits for a protocol client; use doctor instead of treating that wait as a startup failure.
 
-## Hermes: use the supported MCP command
+## Hermes: disabled-first staging
 
-This step **writes to the selected existing Hermes profile**. Choose that profile deliberately; don't overwrite another server with the same name. Inspect existing connections through Hermes's own controls before adding it. If already present, stop and compare its configuration rather than removing it blindly.
+Hermes uses `mcp_servers`, not the generic printed JSON wrapper `mcpServers`. Native tool filtering belongs under `tools.include`; resources/prompts have separate controls and events are a server-level flag.[1]
+Sampling is enabled by default in Hermes, so disable it **before the first discovery connection**, not after `mcp add` has already connected.[2]
+
+The following is for a **new, absent server name only**. It writes to the selected existing profile, not a disposable profile. Choose the intended profile deliberately. Use supported config commands; do not hand-edit live YAML or use `--force` to bypass an unsupported setting.[4]
+
+1. Check `hermes config get --help`, `hermes config set --help` and the selected connection in Hermes's settings/connection controls. The installed version must accept a JSON object for `config set` and JSON readback for `config get`.
+2. Inspect **only** `mcp_servers.sandyboxing`. Confirm it is genuinely absent. A `Config key not set: mcp_servers.sandyboxing` result is absence; an arbitrary nonzero exit, permission failure or malformed configuration is **not**. If present, stop here and follow **Existing-server upgrade and rollback** below. Do not dump the whole profile or request raw/unmasked values.
 
 ```sh
-PROFILE=default  # replace only if you intend a different EXISTING profile
-hermes -p "$PROFILE" mcp add sandyboxing \
-  --command "$NODE_BIN" --args "$CLI_ENTRY" mcp --read-only
+PROFILE=default  # choose the intended EXISTING profile
+if hermes -p "$PROFILE" config get mcp_servers.sandyboxing --json; then
+  printf '%s\n' 'STOP: the server exists; use the upgrade/rollback section.'
+else
+  printf '%s\n' 'Inspect the diagnostic: only the explicit missing-key result establishes absence.'
+fi
 ```
 
-`--args` must be the last Hermes option. Follow the discovery/selection prompt; select `providers_list`, `route_jobs`, and `forge_connection_status`. `forge_probe` is retained by the release for protocol compatibility but always returns a local `read_only` denial. It need not be exposed in the agent's tool selection.
+This is a manual inspection checkpoint, not an automated permission to write. The conditional keeps an expected missing-key exit from terminating a shell that uses `set -e`. Do not turn all command failures into an “absent” boolean.
 
-Disable optional server-initiated sampling using the supported config command, then test the exact server:
+3. Once absence is established, generate the **complete** entry from the CLI's printed argv, then recheck absence immediately before the write. Do not run this new-entry write against an existing working connection.
 
 ```sh
-hermes -p "$PROFILE" config set mcp_servers.sandyboxing.sampling.enabled false
+STAGED=$(printf '%s\n' "$CONFIG" | node -e '
+  const fs=require("node:fs"), p=require("node:path");
+  const s=JSON.parse(fs.readFileSync(0,"utf8")).mcpServers.sandyboxing;
+  if(!p.isAbsolute(s.command) || s.args.length!==3 || !p.isAbsolute(s.args[0]) ||
+     s.args[1]!=="mcp" || s.args[2]!=="--read-only") process.exit(1);
+  process.stdout.write(JSON.stringify({
+    command:s.command, args:s.args, env:{}, enabled:false,
+    sampling:{enabled:false}, events:false,
+    tools:{include:["providers_list","route_jobs","forge_connection_status",
+      "providers_search","provider_details","plan_explain"],
+      resources:false, prompts:false}
+  }));
+')
+# Only after the explicit, immediately preceding name-absence check:
+hermes -p "$PROFILE" config set mcp_servers.sandyboxing "$STAGED"
+hermes -p "$PROFILE" config get mcp_servers.sandyboxing --json
+```
+
+Read back and compare the full selected entry: exact `command`, separate `args`, empty `env`, `enabled:false`, `sampling.enabled:false`, `events:false`, the exact six native names in `tools.include`, and `tools.resources:false` / `tools.prompts:false`. Do not activate if anything differs. Disabled means no connection/discovery/registration; the config remains for later activation.[1]
+
+This intentionally avoids discovery-first `hermes mcp add` for the initial stage. No API key, provider login, model credential, environment-file import or `forge_probe` permission belongs in this entry. Exact per-tool inclusion is preferable to a wildcard. In Hermes, `include` takes precedence over `exclude`; do not assume an exclusion can override an overly broad include.[1]
+
+### Activate and verify — no application restart
+
+After the staged readback is accepted, use the supported Hermes connection manager to **enable the existing custom MCP server** named `sandyboxing`. On surfaces exposing `manage_connections`, the action is `enable` with `connectors:[{"name":"sandyboxing","mcp":true}]`; this is an agent-tool action, not a shell command. Do not try to reinstall an uncatalogued custom server as a catalog entry. Read the selected entry back after enable and confirm the only intended policy change is `enabled:true`.
+
+Alternatively, where the installed version supports this route, set only `mcp_servers.sandyboxing.enabled` to `true` with `hermes config set`, read back the full entry, then use `/reload-mcp` in the same selected-profile session. Reload is a supported way to apply MCP configuration; a gateway/application restart is not required.[1][3]
+**Choose one supported activation route.** A pending approval, timeout or refusal is not success and not permission to switch routes to bypass it.
+
+After authorized activation, an optional shell-level connection check is:
+
+```sh
 hermes -p "$PROFILE" mcp test sandyboxing
 ```
 
-Check the actual connection result and tool names. Current official docs specify test exits `0` connected, `1` failed, `3` missing configuration (`2` is usage error). Check your installed version rather than treating all zero-exit commands as setup success. Start a new session on that same profile, or use `/reload-mcp` where your installed client supports it. Do not restart an active gateway just to test this setup.
+`mcp test` connects and lists server-advertised tools; current docs specify exits `0` connected, `1` failed, `3` missing configuration and `2` usage error.[3]
+It can list **seven** tools even when the model is allowed only **six**. This discovery result is not current-session activation proof.
 
-Hermes's config root is `mcp_servers`; the CLI's generic JSON uses `mcpServers`. The add command handles that mapping—do not paste the generic wrapper as an unknown root setting and do not hand-edit the live YAML. Client-side tool prefixes vary by version; verify the server-native names instead of guessing the prefix.
+In the actual session, inspect the returned host tool names rather than constructing prefixes. Confirm the six native names are available and `forge_probe` is excluded, then make explicit read-only calls through the registered tools (examples in [compact usage](compact-tools.md)). Successful actual calls establish that session's activation; a saved config or successful CLI discovery alone does not. No model prompt is needed for the CLI diagnostic; using an agent to call tools can involve the host's normal model traffic.
 
-Removal, only for the entry you added:
+### Existing-server upgrade and rollback
 
-```sh
-hermes -p "$PROFILE" mcp remove sandyboxing
-```
+1. Leave an already verified connection intact until the new, separate versioned installation passes doctor/argv checks. Do not apply the new-name staging recipe blindly or remove/re-add a working server to force it through onboarding.
+2. Read only the selected server with supported controls. Capture an exact rollback value **only if established to be secret-free**. If it contains credentials, masked values or secret references, use the host's supported secure workflow; do not dump or replace them with redacted strings. Preserve the old installation.
+3. Compare the current selected entry with the captured value immediately before an authorized replacement. If it changed, stop for reconciliation. This is an operational comparison, not an atomic compare-and-swap guarantee.
+4. Through `hermes -p "$PROFILE" config set mcp_servers.sandyboxing '<complete-reviewed-JSON>'`, stage the separately reviewed replacement disabled, with the new printed argv and exactly the six read-only native tools; sampling/resources/prompts/events remain false and no credentials are added. Read it back, then use the supported activation and actual-call checks above.
+5. If activation fails, restore the prior exact value through supported `config set` **only if** the current value still equals this operation's last verified staged/activated value, including any enable change. If another session changed it, stop rather than overwrite concurrent work. Read the restored entry back. Report **configuration restored**, not **old runtime reconnected**, until allowed calls actually verify the latter. Do not route around an unresolved activation approval.
 
-## Claude Code: explicit stdio and local scope
+For removal, first confirm the selected entry is still the one you intend to remove; then use `hermes -p "$PROFILE" mcp remove sandyboxing` and verify it is gone. Never delete another server or whole profile as cleanup.
 
-Run this from the project where you want the server. `--scope local` is private to you for that project; it is not a shared `.mcp.json` commit and not a global user-scoped entry. It still writes Claude's configuration. If `sandyboxing` already exists, stop and compare first.
+## Claude Code: guidance only, explicit local scope
+
+The following commands have **not** been executed against a user profile for this release. Use the target project's normal configuration/permission controls to inspect whether `sandyboxing` already exists; stop and compare if it does. Do not borrow Hermes-only policy keys and assume Claude enforces them.
+
+From the intended project, `--scope local` makes the server private to you for that project; `project` would write a shared `.mcp.json`, and `user` would apply across projects.[5]
 
 ```sh
 claude mcp add --transport stdio --scope local sandyboxing -- \
@@ -75,61 +130,23 @@ claude mcp add --transport stdio --scope local sandyboxing -- \
 claude mcp get sandyboxing
 ```
 
-The `--` separates Claude flags from server argv. Check **Connected**, not just the successful “Added” message. `get` performs a health check for an enabled, approved server. Pending approval or disabled/blocked status is not connection success; resolve it through the normal client UI without bypassing trust or managed policy. In a new or refreshed Claude Code session, `/mcp` shows the server and connection status. No prompt/model inference is necessary for the CLI health check.
+The `--` separates client options from server argv. Check **Connected**, not merely “Added”. Unapproved, disabled or blocked entries are not connection success; use normal trust/approval controls, never a bypass.[5]
+In the client's `/mcp` and permission controls, permit only the same six read-only tool names, keep `forge_probe` unavailable, and decline unused sampling/resources/prompts/events if that installed host exposes them. This guide does not establish that Claude has an equivalent pre-discovery six-tool filter or sampling policy; if those controls are mandatory and cannot be verified **before connecting**, stop rather than claim the Hermes policy is reproduced. The release itself still denies probes locally.
 
-For a deliberate different scope, read Claude's scope documentation first. `project` writes a shared `.mcp.json` and introduces a workspace approval step; `user` exposes the server across your projects. Neither is the default recommendation here.
+After authorized setup, verify the actual tool registry/calls separately. A Claude health check is not six-tool model-use evidence. No Claude Desktop, Linux-client, Windows-client or arbitrary MCP-version qualification is implied.
 
-Removal from the same project and scope:
+Removal from the same project and explicit scope:
 
 ```sh
 claude mcp remove --scope local sandyboxing
 ```
 
-## Windows PowerShell syntax — native Windows unqualified
+Check removal through the same client's controls. Do not erase shared project/user settings or credentials. Native Windows remains deferred and unqualified; no Windows installation/setup recipe is promoted by this guide.
 
-This is a proposed native-Windows setup form, **not a Windows support claim**. Do not copy a macOS/WSL path into native Windows. After a separately verified native-Windows installation, set `$Entry` to that installation's real `dist-cli\index.mjs` and use the Node v24.22.2 executable from the same environment:
+## Sources
 
-```powershell
-$Entry = 'C:\replace-with-verified-prefix\node_modules\sandyboxing\dist-cli\index.mjs'
-$DoctorText = & node $Entry doctor --json
-if ($LASTEXITCODE -ne 0) { throw 'doctor failed' }
-$Doctor = $DoctorText | ConvertFrom-Json
-if ($Doctor.status -ne 'ok' -or $Doctor.runtime.actual -ne 'v24.22.2' -or -not $Doctor.runtime.matchesDeclared -or $Doctor.liveExecution -ne 'disabled') { throw 'runtime/read-only checks failed' }
-$ConfigText = & node $Entry mcp-config --json
-if ($LASTEXITCODE -ne 0) { throw 'mcp-config failed' }
-$Server = ($ConfigText | ConvertFrom-Json).mcpServers.sandyboxing
-if ($Server.args.Count -ne 3 -or $Server.args[1] -ne 'mcp' -or $Server.args[2] -ne '--read-only') { throw 'Unexpected launch argv' }
-$NodeBin = $Server.command
-$CliEntry = $Server.args[0]
-```
-
-Choose **one** client. These commands change its selected configuration.
-
-Hermes (chosen existing profile):
-
-```powershell
-hermes -p default mcp add sandyboxing --command $NodeBin --args $CliEntry mcp --read-only
-```
-
-Or Claude Code (from the intended project):
-
-```powershell
-claude mcp add --transport stdio --scope local sandyboxing -- $NodeBin $CliEntry mcp --read-only
-```
-
-Use the same-client verification/removal steps above. A native `node.exe` launch avoids requiring an `npx.cmd`/`cmd /c` wrapper; do not add a shell wrapper to the printed argv. Native Windows and WSL are separate qualification targets. This PowerShell snippet has only static review, not Windows execution evidence.
-
-## What success does—and does not—mean
-
-- Doctor: the installed release initializes real local stdio, discovers four tools, matches its packaged catalogue and fixed planner, and observes disabled execution.
-- `hermes mcp test` / `claude mcp get`: the selected installed client can connect and discover; neither is proof of a model successfully using every tool.
-- Existing disposable host-bridge qualification is not proof that your real profile, desktop UI, gateway, or another version is configured.
-- No provider account is authenticated or checked. `forge_connection_status` is passive/read-only. `forge_probe` cannot execute in this release, regardless of its general-purpose description.
-- An MCP server being read-only does not turn the entire host application offline. Client telemetry/model traffic is separate; do not send a prompt if you want no model calls.
-
-## Official references
-
-- [Hermes MCP usage and CLI test](https://hermes-agent.nousresearch.com/docs/guides/use-mcp-with-hermes)
-- [Hermes MCP behavior](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp)
-- [Hermes configuration roots, filtering and reload](https://hermes-agent.nousresearch.com/docs/reference/mcp-config-reference)
-- [Claude Code local stdio, scope and health checks](https://code.claude.com/docs/en/mcp)
+[1] https://hermes-agent.nousresearch.com/docs/reference/mcp-config-reference
+[2] https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp
+[3] https://hermes-agent.nousresearch.com/docs/guides/use-mcp-with-hermes
+[4] https://hermes-agent.nousresearch.com/docs/user-guide/configuration
+[5] https://code.claude.com/docs/en/mcp
